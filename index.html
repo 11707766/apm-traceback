@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>APMTRACEBACK &middot; Secure Access</title>
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body class="auth-body">
+  <div class="orb orb-a"></div>
+  <div class="orb orb-b"></div>
+  <div class="orb orb-c"></div>
+
+  <div class="auth-shell">
+    <section class="auth-intro">
+      <div class="brand">
+        <span class="brand-mark">APM</span>
+        <span class="brand-name">APMTRACEBACK</span>
+      </div>
+      <span class="badge"><i class="dot"></i>APM Secure Access</span>
+      <h1>Login to <span class="grad">APMTRACEBACK</span> Application</h1>
+      <p class="tagline">Requirement and signal changes tracked in one place.</p>
+      <ul class="points">
+        <li>Side-by-side previous vs updated comparison</li>
+        <li>Role based access for developers and testers</li>
+        <li>Tester notifications by mail and in-app popup</li>
+      </ul>
+    </section>
+
+    <section class="auth-card">
+      <div class="tabs" role="tablist">
+        <button class="tab active" data-pane="pane-login" role="tab">Login</button>
+        <button class="tab" data-pane="pane-register" role="tab">Register</button>
+        <button class="tab" data-pane="pane-reset" role="tab">Reset</button>
+      </div>
+
+      <!-- LOGIN -->
+      <form class="pane active" id="pane-login" autocomplete="on">
+        <h2>User Login</h2>
+        <label for="login-email">Email</label>
+        <input id="login-email" type="email" required placeholder="name@company.com" autocomplete="username" />
+        <label for="login-password">Password</label>
+        <input id="login-password" type="password" required placeholder="Your password" autocomplete="current-password" />
+        <button class="btn primary block" type="submit">Login</button>
+        <p class="hint">No account yet? Use the <b>Register</b> tab to create one.</p>
+        <p class="msg" id="login-msg"></p>
+      </form>
+
+      <!-- REGISTER -->
+      <form class="pane" id="pane-register" autocomplete="on">
+        <h2>New User Registration</h2>
+        <label for="reg-name">Full name</label>
+        <input id="reg-name" type="text" required placeholder="Shubham Nama" autocomplete="name" />
+        <label for="reg-email">Email</label>
+        <input id="reg-email" type="email" required placeholder="name@company.com" autocomplete="email" />
+        <label for="reg-role">Role</label>
+        <select id="reg-role" required>
+          <option value="developer">Developer &ndash; raises requirement / signal changes</option>
+          <option value="tester">Tester &ndash; reviews and accepts changes</option>
+        </select>
+        <div class="row">
+          <div>
+            <label for="reg-password">Password</label>
+            <input id="reg-password" type="password" required placeholder="Min. 8 characters" autocomplete="new-password" />
+          </div>
+          <div>
+            <label for="reg-confirm">Confirm password</label>
+            <input id="reg-confirm" type="password" required placeholder="Repeat password" autocomplete="new-password" />
+          </div>
+        </div>
+        <button class="btn primary block" type="submit">Create account</button>
+        <p class="msg" id="reg-msg"></p>
+      </form>
+
+      <!-- RESET -->
+      <form class="pane" id="pane-reset">
+        <h2>Reset Password</h2>
+        <label for="rst-email">Registered email</label>
+        <input id="rst-email" type="email" required placeholder="name@company.com" />
+        <button class="btn ghost block" type="button" id="btn-token">Generate reset token</button>
+        <label for="rst-token">Reset token</label>
+        <input id="rst-token" type="text" required placeholder="Paste the token" />
+        <div class="row">
+          <div>
+            <label for="rst-password">New password</label>
+            <input id="rst-password" type="password" required placeholder="Min. 8 characters" />
+          </div>
+          <div>
+            <label for="rst-confirm">Confirm</label>
+            <input id="rst-confirm" type="password" required placeholder="Repeat password" />
+          </div>
+        </div>
+        <button class="btn primary block" type="submit">Update password</button>
+        <p class="msg" id="rst-msg"></p>
+      </form>
+    </section>
+  </div>
+
+  <script src="js/hash.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/auth.js"></script>
+</body>
+</html>

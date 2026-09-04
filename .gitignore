@@ -1,0 +1,6 @@
+# Build output / editor noise
+.DS_Store
+Thumbs.db
+.vscode/
+node_modules/
+*.log

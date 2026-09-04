@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>APMTRACEBACK &middot; Dashboard</title>
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body class="app-body">
+  <header class="topbar">
+    <div>
+      <span class="badge light">APM Project Tracebacking Application</span>
+      <h1>Requirement &amp; Signal Change Traceability</h1>
+      <p class="muted">
+        Raise, compare and review requirement and signal changes in one place.
+      </p>
+    </div>
+    <div class="topbar-actions">
+      <div class="who">
+        <strong id="who-name">&mdash;</strong>
+        <span id="who-role" class="role-chip">&mdash;</span>
+      </div>
+      <button class="btn dark" id="btn-change-pw">Change Password</button>
+      <button class="btn danger" id="btn-logout">Logout</button>
+    </div>
+  </header>
+
+  <section class="stats">
+    <div class="stat s-dark"><b id="st-total">0</b><span>Total Changes</span></div>
+    <div class="stat s-green"><b id="st-notified">0</b><span>Tester Notified</span></div>
+    <div class="stat s-amber"><b id="st-pending">0</b><span>Pending</span></div>
+    <div class="stat s-blue"><b id="st-accepted">0</b><span>Accepted</span></div>
+    <div class="stat s-red"><b id="st-rejected">0</b><span>Rejected</span></div>
+  </section>
+
+  <main class="layout">
+    <aside class="panel" id="dev-panel">
+      <div class="panel-head">
+        <h3 id="dev-panel-title">Developer Update</h3>
+        <button class="btn green sm" id="btn-export">Export CSV</button>
+      </div>
+      <form id="change-form">
+        <div class="row">
+          <div>
+            <label for="f-type">Type</label>
+            <select id="f-type">
+              <option>Requirement</option>
+              <option>Signal</option>
+            </select>
+          </div>
+          <div>
+            <label for="f-priority">Priority</label>
+            <select id="f-priority">
+              <option>Low</option>
+              <option selected>Medium</option>
+              <option>High</option>
+              <option>Critical</option>
+            </select>
+          </div>
+        </div>
+        <label for="f-id">Change ID</label>
+        <input id="f-id" required placeholder="APM-REQ-1042" />
+        <label for="f-module">Module</label>
+        <input id="f-module" required placeholder="Vehicle State / Brake Control" />
+        <label for="f-tester">Assign tester</label>
+        <select id="f-tester" required></select>
+        <label for="f-prev">Previous requirement / signal</label>
+        <textarea id="f-prev" rows="3" required placeholder="Existing content"></textarea>
+        <label for="f-next">Updated requirement / signal</label>
+        <textarea id="f-next" rows="3" required placeholder="New content"></textarea>
+        <label for="f-reason">Developer reason</label>
+        <textarea id="f-reason" rows="2" required placeholder="Why the change is needed"></textarea>
+        <button class="btn primary block" type="submit" id="form-submit">Raise change request</button>
+        <button class="btn ghost block" type="button" id="cancel-edit" hidden>Cancel edit</button>
+        <p class="msg" id="form-msg"></p>
+      </form>
+    </aside>
+
+    <aside class="panel" id="tester-note" hidden>
+      <div class="panel-head"><h3>Tester Workspace</h3></div>
+      <p class="muted">
+        Review the changes assigned to you and accept or reject them.
+      </p>
+      <button class="btn green block" id="btn-export-tester">Export CSV</button>
+    </aside>
+
+    <section class="content">
+      <div class="panel">
+        <div class="panel-head">
+          <h3>Change Requests</h3>
+          <div class="filters">
+            <input id="q" placeholder="Search change ID, module, developer or tester" />
+            <select id="f-status">
+              <option value="">All status</option>
+              <option value="Draft">Draft</option>
+              <option value="Tester Notified">Tester Notified</option>
+              <option value="Accepted">Accepted</option>
+              <option value="Rejected">Rejected</option>
+            </select>
+          </div>
+        </div>
+        <div id="change-list" class="change-list"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Change password modal -->
+  <div class="modal-backdrop" id="pw-modal" hidden>
+    <form class="modal" id="pw-form">
+      <h3>Change Password</h3>
+      <label for="pw-old">Current password</label>
+      <input id="pw-old" type="password" required autocomplete="current-password" />
+      <label for="pw-new">New password</label>
+      <input id="pw-new" type="password" required autocomplete="new-password" />
+      <label for="pw-confirm">Confirm new password</label>
+      <input id="pw-confirm" type="password" required autocomplete="new-password" />
+      <p class="msg" id="pw-msg"></p>
+      <div class="modal-actions">
+        <button class="btn ghost" type="button" id="pw-cancel">Cancel</button>
+        <button class="btn primary" type="submit">Update</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Tester review modal -->
+  <div class="modal-backdrop" id="review-modal" hidden>
+    <form class="modal" id="review-form">
+      <h3 id="review-title">Review change</h3>
+      <label for="review-comment">Comment (optional)</label>
+      <textarea id="review-comment" rows="3" placeholder="Reason or note for the developer"></textarea>
+      <div class="modal-actions">
+        <button class="btn ghost" type="button" id="review-cancel">Cancel</button>
+        <button class="btn primary" type="submit" id="review-submit">Confirm</button>
+      </div>
+    </form>
+  </div>
+
+  <div id="toasts" class="toasts"></div>
+  <script src="js/hash.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/diff.js"></script>
+  <script src="js/dashboard.js"></script>
+</body>
+</html>
