@@ -1,0 +1,25 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Profiles: anyone signed in can read (needed to list testers), only the owner writes.
+    match /users/{uid} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null && request.auth.uid == uid;
+      allow delete: if false;
+    }
+
+    // Change requests: visible to every signed-in user.
+    // Only the raising developer or the assigned tester may modify one.
+    match /changes/{id} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+                    && request.resource.data.developerEmail == request.auth.token.email;
+      allow update: if request.auth != null
+                    && (resource.data.developerEmail == request.auth.token.email
+                        || resource.data.testerEmail == request.auth.token.email);
+      allow delete: if false;
+    }
+  }
+}

@@ -75,29 +75,16 @@
       <!-- RESET -->
       <form class="pane" id="pane-reset">
         <h2>Reset Password</h2>
+        <p class="hint">We email you a secure link to set a new password.</p>
         <label for="rst-email">Registered email</label>
         <input id="rst-email" type="email" required placeholder="name@company.com" />
-        <button class="btn ghost block" type="button" id="btn-token">Generate reset token</button>
-        <label for="rst-token">Reset token</label>
-        <input id="rst-token" type="text" required placeholder="Paste the token" />
-        <div class="row">
-          <div>
-            <label for="rst-password">New password</label>
-            <input id="rst-password" type="password" required placeholder="Min. 8 characters" />
-          </div>
-          <div>
-            <label for="rst-confirm">Confirm</label>
-            <input id="rst-confirm" type="password" required placeholder="Repeat password" />
-          </div>
-        </div>
-        <button class="btn primary block" type="submit">Update password</button>
+        <button class="btn primary block" type="submit">Send reset link</button>
         <p class="msg" id="rst-msg"></p>
       </form>
     </section>
   </div>
 
-  <script src="js/hash.js"></script>
-  <script src="js/store.js"></script>
-  <script src="js/auth.js"></script>
+  <script type="module" src="js/setup-check.js"></script>
+  <script type="module" src="js/auth.js"></script>
 </body>
 </html>

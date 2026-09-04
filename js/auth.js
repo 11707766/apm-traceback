@@ -1,84 +1,89 @@
-/* Login, registration and password reset for APMTRACEBACK. */
-(function () {
-  "use strict";
+/* Login, registration and password reset backed by Firebase Auth. */
+import { API } from "./api.js";
 
-  if (Store.session()) {
-    location.replace("dashboard.html");
+function say(el, text, ok) {
+  el.textContent = text;
+  el.className = "msg " + (ok ? "ok" : "err");
+}
+
+function busy(form, on) {
+  form.querySelectorAll("button, input, select").forEach(function (n) { n.disabled = on; });
+}
+
+// createUser signs the new account in briefly; don't bounce to the dashboard for it.
+var registering = false;
+
+document.querySelectorAll(".tab").forEach(function (tab) {
+  tab.addEventListener("click", function () {
+    document.querySelectorAll(".tab").forEach(function (t) { t.classList.remove("active"); });
+    document.querySelectorAll(".pane").forEach(function (p) { p.classList.remove("active"); });
+    tab.classList.add("active");
+    document.getElementById(tab.dataset.pane).classList.add("active");
+  });
+});
+
+/* ---------- login ---------- */
+document.getElementById("pane-login").addEventListener("submit", async function (e) {
+  e.preventDefault();
+  var msg = document.getElementById("login-msg");
+  say(msg, "Signing in\u2026", true);
+  busy(e.target, true);
+
+  var result = await API.login(
+    document.getElementById("login-email").value,
+    document.getElementById("login-password").value
+  );
+  busy(e.target, false);
+  if (!result.ok) { say(msg, result.error, false); return; }
+  location.href = "dashboard.html";
+});
+
+/* ---------- register ---------- */
+document.getElementById("pane-register").addEventListener("submit", async function (e) {
+  e.preventDefault();
+  var msg = document.getElementById("reg-msg");
+  var password = document.getElementById("reg-password").value;
+  if (password !== document.getElementById("reg-confirm").value) {
+    say(msg, "Passwords do not match.", false);
     return;
   }
 
-  function say(el, text, ok) {
-    el.textContent = text;
-    el.className = "msg " + (ok ? "ok" : "err");
+  say(msg, "Creating account\u2026", true);
+  busy(e.target, true);
+  registering = true;
+  var result = await API.register(
+    document.getElementById("reg-name").value,
+    document.getElementById("reg-email").value,
+    password,
+    document.getElementById("reg-role").value
+  );
+  registering = false;
+  busy(e.target, false);
+  if (!result.ok) { say(msg, result.error, false); return; }
+
+  e.target.reset();
+  say(msg, "Account created. You can log in now.", true);
+});
+
+/* ---------- reset ---------- */
+document.getElementById("pane-reset").addEventListener("submit", async function (e) {
+  e.preventDefault();
+  var msg = document.getElementById("rst-msg");
+  say(msg, "Sending\u2026", true);
+  busy(e.target, true);
+
+  var result = await API.sendReset(document.getElementById("rst-email").value);
+  busy(e.target, false);
+  if (!result.ok) { say(msg, result.error, false); return; }
+
+  e.target.reset();
+  say(msg, "If that email is registered, a reset link is on its way. Check your inbox and spam folder.", true);
+});
+
+var redirected = false;
+API.onSession(function (session) {
+  if (session && !redirected && !registering) {
+    redirected = true;
+    location.replace("dashboard.html");
   }
-
-  document.querySelectorAll(".tab").forEach(function (tab) {
-    tab.addEventListener("click", function () {
-      document.querySelectorAll(".tab").forEach(function (t) { t.classList.remove("active"); });
-      document.querySelectorAll(".pane").forEach(function (p) { p.classList.remove("active"); });
-      tab.classList.add("active");
-      document.getElementById(tab.dataset.pane).classList.add("active");
-    });
-  });
-
-  /* ---------- login ---------- */
-  document.getElementById("pane-login").addEventListener("submit", function (e) {
-    e.preventDefault();
-    var msg = document.getElementById("login-msg");
-    var result = Store.login(
-      document.getElementById("login-email").value,
-      document.getElementById("login-password").value
-    );
-    if (!result.ok) { say(msg, result.error, false); return; }
-    location.href = "dashboard.html";
-  });
-
-  /* ---------- register ---------- */
-  document.getElementById("pane-register").addEventListener("submit", function (e) {
-    e.preventDefault();
-    var msg = document.getElementById("reg-msg");
-    var password = document.getElementById("reg-password").value;
-    if (password !== document.getElementById("reg-confirm").value) {
-      say(msg, "Passwords do not match.", false);
-      return;
-    }
-    var result = Store.register(
-      document.getElementById("reg-name").value,
-      document.getElementById("reg-email").value,
-      password,
-      document.getElementById("reg-role").value
-    );
-    if (!result.ok) { say(msg, result.error, false); return; }
-
-    e.target.reset();
-    say(msg, "Account created. You can log in now.", true);
-  });
-
-  /* ---------- reset ---------- */
-  document.getElementById("btn-token").addEventListener("click", function () {
-    var msg = document.getElementById("rst-msg");
-    var result = Store.requestReset(document.getElementById("rst-email").value);
-    if (!result.ok) { say(msg, result.error, false); return; }
-    document.getElementById("rst-token").value = result.token;
-    say(msg, "Reset token " + result.token + " issued and written to the mail log. Valid 15 minutes.", true);
-  });
-
-  document.getElementById("pane-reset").addEventListener("submit", function (e) {
-    e.preventDefault();
-    var msg = document.getElementById("rst-msg");
-    var password = document.getElementById("rst-password").value;
-    if (password !== document.getElementById("rst-confirm").value) {
-      say(msg, "Passwords do not match.", false);
-      return;
-    }
-    var result = Store.resetPassword(
-      document.getElementById("rst-email").value,
-      document.getElementById("rst-token").value,
-      password
-    );
-    if (!result.ok) { say(msg, result.error, false); return; }
-
-    e.target.reset();
-    say(msg, "Password updated. Log in with your new password.", true);
-  });
-})();
+});
