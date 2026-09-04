@@ -1,42 +1,73 @@
-/* Firebase Auth + Firestore backend for APMTRACEBACK.
+/* Supabase Auth + Postgres backend for APMTRACEBACK.
    Data lives in the cloud, so every device sees the same change requests. */
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
-import {
-  getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut,
-  onAuthStateChanged, sendPasswordResetEmail, updatePassword,
-  EmailAuthProvider, reauthenticateWithCredential, setPersistence, browserLocalPersistence
-} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
-import {
-  getFirestore, collection, doc, addDoc, setDoc, getDoc, getDocs,
-  updateDoc, onSnapshot, query, where, orderBy
-} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
-import { firebaseConfig, isConfigured } from "./firebase-config.js";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+import { SUPABASE_URL, SUPABASE_ANON_KEY, isConfigured } from "./supabase-config.js";
 
 if (!isConfigured) {
-  throw new Error("Firebase is not configured. Fill in js/firebase-config.js.");
+  throw new Error("Supabase is not configured. Fill in js/supabase-config.js.");
 }
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-await setPersistence(auth, browserLocalPersistence);
+const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const USERS = collection(db, "users");
-const CHANGES = collection(db, "changes");
+const COLUMNS = {
+  changeId: "change_id",
+  type: "type",
+  priority: "priority",
+  status: "status",
+  module: "module",
+  previous: "previous_text",
+  updated: "updated_text",
+  reason: "reason",
+  developer: "developer",
+  developerEmail: "developer_email",
+  tester: "tester",
+  testerEmail: "tester_email",
+  testerComment: "tester_comment",
+  createdAt: "created_at",
+  notifiedAt: "notified_at",
+  reviewedAt: "reviewed_at",
+  updatedAt: "updated_at"
+};
+
+function toRow(data) {
+  const row = {};
+  Object.keys(data).forEach(function (key) {
+    if (COLUMNS[key]) row[COLUMNS[key]] = data[key];
+  });
+  return row;
+}
+
+function fromRow(row) {
+  const item = { uid: row.id };
+  Object.keys(COLUMNS).forEach(function (key) {
+    item[key] = row[COLUMNS[key]];
+  });
+  return item;
+}
 
 function friendly(error) {
-  const map = {
-    "auth/invalid-credential": "Invalid email or password.",
-    "auth/invalid-login-credentials": "Invalid email or password.",
-    "auth/wrong-password": "Invalid email or password.",
-    "auth/user-not-found": "Invalid email or password.",
-    "auth/email-already-in-use": "An account with this email already exists.",
-    "auth/weak-password": "Password must be at least 8 characters.",
-    "auth/invalid-email": "Enter a valid email address.",
-    "auth/too-many-requests": "Too many attempts. Try again in a few minutes.",
-    "auth/network-request-failed": "Network error. Check your connection."
+  const text = String((error && error.message) || "Something went wrong.");
+  if (/invalid login credentials/i.test(text)) return "Invalid email or password.";
+  if (/already registered|already been registered/i.test(text)) return "An account with this email already exists.";
+  if (/password should be at least/i.test(text)) return "Password must be at least 8 characters.";
+  if (/invalid email|email address .* invalid/i.test(text)) return "Enter a valid email address.";
+  if (/email not confirmed/i.test(text)) return "Confirm your email address first, then log in.";
+  if (/rate limit|too many/i.test(text)) return "Too many attempts. Try again in a few minutes.";
+  return text;
+}
+
+async function currentProfile(user) {
+  if (!user) return null;
+  const meta = user.user_metadata || {};
+  const profile = {
+    id: user.id,
+    name: meta.name || user.email,
+    email: user.email,
+    role: meta.role === "tester" ? "tester" : "developer"
   };
-  return map[error && error.code] || (error && error.message) || "Something went wrong.";
+  // Mirrors the account into profiles so developers can look up registered testers.
+  await db.from("profiles").upsert(profile, { onConflict: "id" });
+  return { uid: user.id, email: profile.email, name: profile.name, role: profile.role };
 }
 
 export const API = {
@@ -47,91 +78,98 @@ export const API = {
     if (String(password).length < 8) return { ok: false, error: "Password must be at least 8 characters." };
     if (role !== "tester" && role !== "developer") return { ok: false, error: "Select a valid role." };
 
-    try {
-      const cred = await createUserWithEmailAndPassword(auth, email, password);
-      await setDoc(doc(USERS, cred.user.uid), {
-        name: name,
-        email: email,
-        role: role,
-        createdAt: new Date().toISOString()
-      });
-      await signOut(auth);
+    const { data, error } = await db.auth.signUp({
+      email: email,
+      password: password,
+      options: { data: { name: name, role: role } }
+    });
+    if (error) return { ok: false, error: friendly(error) };
+
+    if (data.session) {
+      await currentProfile(data.user);
+      await db.auth.signOut();
       return { ok: true };
-    } catch (e) {
-      return { ok: false, error: friendly(e) };
     }
+    return { ok: true, needsConfirmation: true };
   },
 
   async login(email, password) {
-    try {
-      await signInWithEmailAndPassword(auth, String(email).trim().toLowerCase(), password);
-      return { ok: true };
-    } catch (e) {
-      return { ok: false, error: friendly(e) };
-    }
+    const { error } = await db.auth.signInWithPassword({
+      email: String(email).trim().toLowerCase(),
+      password: password
+    });
+    if (error) return { ok: false, error: friendly(error) };
+    return { ok: true };
   },
 
-  logout() { return signOut(auth); },
+  logout() { return db.auth.signOut(); },
 
   async sendReset(email) {
-    try {
-      await sendPasswordResetEmail(auth, String(email).trim().toLowerCase());
-      return { ok: true };
-    } catch (e) {
-      return { ok: false, error: friendly(e) };
-    }
+    const redirectTo = location.origin + location.pathname.replace(/[^/]*$/, "index.html");
+    const { error } = await db.auth.resetPasswordForEmail(
+      String(email).trim().toLowerCase(), { redirectTo: redirectTo }
+    );
+    if (error) return { ok: false, error: friendly(error) };
+    return { ok: true };
+  },
+
+  /* Used after following a reset link, where the recovery session is already active. */
+  async setPassword(newPassword) {
+    if (String(newPassword).length < 8) return { ok: false, error: "Password must be at least 8 characters." };
+    const { error } = await db.auth.updateUser({ password: newPassword });
+    if (error) return { ok: false, error: friendly(error) };
+    return { ok: true };
   },
 
   async changePassword(currentPassword, newPassword) {
-    const user = auth.currentUser;
-    if (!user) return { ok: false, error: "You are signed out." };
+    const { data } = await db.auth.getUser();
+    if (!data || !data.user) return { ok: false, error: "You are signed out." };
     if (String(newPassword).length < 8) return { ok: false, error: "New password must be at least 8 characters." };
-    try {
-      await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, currentPassword));
-      await updatePassword(user, newPassword);
-      return { ok: true };
-    } catch (e) {
-      return { ok: false, error: friendly(e) };
-    }
+
+    const check = await db.auth.signInWithPassword({ email: data.user.email, password: currentPassword });
+    if (check.error) return { ok: false, error: "Current password is incorrect." };
+
+    const { error } = await db.auth.updateUser({ password: newPassword });
+    if (error) return { ok: false, error: friendly(error) };
+    return { ok: true };
   },
 
-  /* Resolves with the signed-in profile, or null when signed out. */
+  /* Calls back with the signed-in profile, null when signed out,
+     or (null, "recovery") when the user arrived from a reset link. */
   onSession(callback) {
-    return onAuthStateChanged(auth, async function (user) {
-      if (!user) { callback(null); return; }
-      const snap = await getDoc(doc(USERS, user.uid));
-      const profile = snap.exists() ? snap.data() : {};
-      callback({
-        uid: user.uid,
-        email: user.email,
-        name: profile.name || user.email,
-        role: profile.role || "developer"
-      });
+    db.auth.getSession().then(async function (res) {
+      callback(await currentProfile(res.data.session && res.data.session.user));
+    });
+    return db.auth.onAuthStateChange(async function (event, session) {
+      if (event === "PASSWORD_RECOVERY") { callback(null, "recovery"); return; }
+      callback(await currentProfile(session && session.user));
     });
   },
 
   async testers() {
-    const snap = await getDocs(query(USERS, where("role", "==", "tester")));
-    return snap.docs.map(function (d) { return d.data(); });
+    const { data } = await db.from("profiles").select("name, email").eq("role", "tester");
+    return data || [];
   },
 
-  /* Live feed: fires again on every remote insert or update. */
+  /* Live feed: refetches whenever any device inserts or updates a row. */
   subscribeChanges(callback) {
-    return onSnapshot(query(CHANGES, orderBy("createdAt", "desc")), function (snap) {
-      callback(snap.docs.map(function (d) {
-        return Object.assign({ uid: d.id }, d.data());
-      }));
-    });
+    async function load() {
+      const { data } = await db.from("changes").select("*").order("created_at", { ascending: false });
+      callback((data || []).map(fromRow));
+    }
+    load();
+    const channel = db
+      .channel("changes-feed")
+      .on("postgres_changes", { event: "*", schema: "public", table: "changes" }, load)
+      .subscribe();
+    return function () { db.removeChannel(channel); };
   },
 
   addChange(data) {
-    return addDoc(CHANGES, Object.assign({
-      status: "Draft",
-      createdAt: new Date().toISOString()
-    }, data));
+    return db.from("changes").insert(toRow(Object.assign({ status: "Draft" }, data)));
   },
 
   updateChange(uid, patch) {
-    return updateDoc(doc(CHANGES, uid), patch);
+    return db.from("changes").update(toRow(patch)).eq("id", uid);
   }
 };

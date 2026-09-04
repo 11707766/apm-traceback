@@ -62,7 +62,9 @@ document.getElementById("pane-register").addEventListener("submit", async functi
   if (!result.ok) { say(msg, result.error, false); return; }
 
   e.target.reset();
-  say(msg, "Account created. You can log in now.", true);
+  say(msg, result.needsConfirmation
+    ? "Account created. Confirm your email from the link we sent, then log in."
+    : "Account created. You can log in now.", true);
 });
 
 /* ---------- reset ---------- */
@@ -80,9 +82,41 @@ document.getElementById("pane-reset").addEventListener("submit", async function 
   say(msg, "If that email is registered, a reset link is on its way. Check your inbox and spam folder.", true);
 });
 
+/* ---------- new password from a reset link ---------- */
+function showPane(id) {
+  document.querySelectorAll(".tab").forEach(function (t) { t.classList.remove("active"); });
+  document.querySelectorAll(".pane").forEach(function (p) { p.classList.remove("active"); });
+  document.getElementById(id).classList.add("active");
+}
+
+document.getElementById("pane-newpw").addEventListener("submit", async function (e) {
+  e.preventDefault();
+  var msg = document.getElementById("np-msg");
+  var password = document.getElementById("np-password").value;
+  if (password !== document.getElementById("np-confirm").value) {
+    say(msg, "Passwords do not match.", false);
+    return;
+  }
+
+  busy(e.target, true);
+  var result = await API.setPassword(password);
+  busy(e.target, false);
+  if (!result.ok) { say(msg, result.error, false); return; }
+
+  e.target.reset();
+  say(msg, "Password updated. Redirecting to the dashboard\u2026", true);
+  setTimeout(function () { location.href = "dashboard.html"; }, 1200);
+});
+
+var recovering = false;
 var redirected = false;
-API.onSession(function (session) {
-  if (session && !redirected && !registering) {
+API.onSession(function (session, mode) {
+  if (mode === "recovery") {
+    recovering = true;
+    showPane("pane-newpw");
+    return;
+  }
+  if (session && !redirected && !registering && !recovering) {
     redirected = true;
     location.replace("dashboard.html");
   }

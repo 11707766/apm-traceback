@@ -81,6 +81,18 @@
         <button class="btn primary block" type="submit">Send reset link</button>
         <p class="msg" id="rst-msg"></p>
       </form>
+
+      <!-- NEW PASSWORD (shown after following the emailed reset link) -->
+      <form class="pane" id="pane-newpw">
+        <h2>Set a New Password</h2>
+        <p class="hint">Reset link verified. Choose a new password for your account.</p>
+        <label for="np-password">New password</label>
+        <input id="np-password" type="password" required placeholder="Min. 8 characters" autocomplete="new-password" />
+        <label for="np-confirm">Confirm password</label>
+        <input id="np-confirm" type="password" required placeholder="Repeat password" autocomplete="new-password" />
+        <button class="btn primary block" type="submit">Update password</button>
+        <p class="msg" id="np-msg"></p>
+      </form>
     </section>
   </div>
 
