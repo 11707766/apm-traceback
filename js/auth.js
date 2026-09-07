@@ -1,5 +1,5 @@
 /* Login, registration and password reset backed by Firebase Auth. */
-import { API, establishRecoverySession } from "./api.js?v=20260908";
+import { API, establishRecoverySession } from "./api.js?v=20260910";
 
 function say(el, text, ok) {
   el.textContent = text;
@@ -38,7 +38,8 @@ document.getElementById("pane-login").addEventListener("submit", async function 
   );
   busy(e.target, false);
   if (!result.ok) { say(msg, result.error, false); return; }
-  location.href = "dashboard.html";
+  // The auth listener redirects after Supabase has persisted the session.
+  say(msg, "Signed in. Opening dashboard\u2026", true);
 });
 
 /* ---------- register ---------- */

@@ -1,5 +1,5 @@
 /* Dashboard: role based change traceability with live cross-device sync. */
-import { API } from "./api.js?v=20260908";
+import { API } from "./api.js?v=20260910";
 
 var esc = APMDiff.escapeHtml;
 

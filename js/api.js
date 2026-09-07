@@ -100,6 +100,17 @@ async function currentProfile(user) {
   return { uid: user.id, email: profile.email, name: profile.name, role: profile.role };
 }
 
+function sessionProfile(user) {
+  if (!user) return null;
+  const meta = user.user_metadata || {};
+  return {
+    uid: user.id,
+    email: user.email,
+    name: meta.name || user.email,
+    role: meta.role === "tester" ? "tester" : "developer"
+  };
+}
+
 export const API = {
   async register(name, email, password, role) {
     name = String(name || "").trim();
@@ -184,15 +195,14 @@ export const API = {
   /* Calls back with the signed-in profile, null when signed out,
      or (null, "recovery") when the user arrived from a reset link. */
   onSession(callback) {
-    db.auth.getSession().then(async function (res) {
-      callback(await currentProfile(res.data.session && res.data.session.user));
+    db.auth.getSession().then(function (res) {
+      callback(sessionProfile(res.data.session && res.data.session.user));
     });
     return db.auth.onAuthStateChange(function (event, session) {
       if (event === "PASSWORD_RECOVERY") { callback(null, "recovery"); return; }
       // Supabase holds an internal auth lock while this callback runs.
-      // Database calls must be deferred or signInWithPassword can never resolve.
-      setTimeout(async function () {
-        callback(await currentProfile(session && session.user));
+      setTimeout(function () {
+        callback(sessionProfile(session && session.user));
       }, 0);
     });
   },
