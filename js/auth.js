@@ -1,5 +1,5 @@
 /* Login, registration and password reset backed by Firebase Auth. */
-import { API } from "./api.js";
+import { API, establishRecoverySession } from "./api.js";
 
 function say(el, text, ok) {
   el.textContent = text;
@@ -12,7 +12,9 @@ function busy(form, on) {
 
 // createUser signs the new account in briefly; don't bounce to the dashboard for it.
 var registering = false;
-var recovering = /(?:[?#&])type=recovery(?:[&#]|$)/.test(location.href);
+var recovering = /(?:[?#&])type=recovery(?:[&#]|$)/.test(location.href) ||
+  new URLSearchParams(location.search).has("code");
+var recoveryReady = false;
 
 document.querySelectorAll(".tab").forEach(function (tab) {
   tab.addEventListener("click", function () {
@@ -90,7 +92,15 @@ function showPane(id) {
   document.getElementById(id).classList.add("active");
 }
 
-if (recovering) showPane("pane-newpw");
+if (recovering) {
+  showPane("pane-newpw");
+  establishRecoverySession().then(function (ready) {
+    recoveryReady = ready;
+    if (!ready) {
+      say(document.getElementById("np-msg"), "This reset link is invalid or has expired. Request a new one.", false);
+    }
+  });
+}
 
 document.getElementById("pane-newpw").addEventListener("submit", async function (e) {
   e.preventDefault();
@@ -98,6 +108,10 @@ document.getElementById("pane-newpw").addEventListener("submit", async function 
   var password = document.getElementById("np-password").value;
   if (password !== document.getElementById("np-confirm").value) {
     say(msg, "Passwords do not match.", false);
+    return;
+  }
+  if (!recoveryReady) {
+    say(msg, "Waiting for reset link verification. Request a new link if this continues.", false);
     return;
   }
 
