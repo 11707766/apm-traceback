@@ -187,9 +187,13 @@ export const API = {
     db.auth.getSession().then(async function (res) {
       callback(await currentProfile(res.data.session && res.data.session.user));
     });
-    return db.auth.onAuthStateChange(async function (event, session) {
+    return db.auth.onAuthStateChange(function (event, session) {
       if (event === "PASSWORD_RECOVERY") { callback(null, "recovery"); return; }
-      callback(await currentProfile(session && session.user));
+      // Supabase holds an internal auth lock while this callback runs.
+      // Database calls must be deferred or signInWithPassword can never resolve.
+      setTimeout(async function () {
+        callback(await currentProfile(session && session.user));
+      }, 0);
     });
   },
 
