@@ -1,6 +1,6 @@
 /* Supabase Auth + Postgres backend for APMTRACEBACK.
    Data lives in the cloud, so every device sees the same change requests. */
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.58.0";
 import { SUPABASE_URL, SUPABASE_ANON_KEY, isConfigured } from "./supabase-config.js";
 
 if (!isConfigured) {
@@ -59,14 +59,21 @@ function friendly(error) {
 async function currentProfile(user) {
   if (!user) return null;
   const meta = user.user_metadata || {};
-  const profile = {
+  const fallback = {
     id: user.id,
     name: meta.name || user.email,
     email: user.email,
     role: meta.role === "tester" ? "tester" : "developer"
   };
-  // Mirrors the account into profiles so developers can look up registered testers.
-  await db.from("profiles").upsert(profile, { onConflict: "id" });
+  const lookup = await db.from("profiles").select("id, name, email, role").eq("id", user.id).maybeSingle();
+  let profile = lookup.data;
+
+  // The first session after signup has no profile row yet.
+  if (!profile) {
+    const created = await db.from("profiles").insert(fallback).select("id, name, email, role").single();
+    if (created.error) throw created.error;
+    profile = created.data;
+  }
   return { uid: user.id, email: profile.email, name: profile.name, role: profile.role };
 }
 
