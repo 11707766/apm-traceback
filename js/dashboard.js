@@ -68,8 +68,9 @@ function notifyTester(previous, firstLoad) {
 
 document.getElementById("btn-logout").addEventListener("click", function () {
   if (unsubscribe) unsubscribe();
-  // Navigation must not wait on a network request; the local auth session is
-  // cleared synchronously by Supabase before its remote sign-out completes.
+  // Clear local state before navigation so a cancelled remote request cannot
+  // restore the dashboard when the Login page initializes.
+  localStorage.removeItem("sb-vmutkqvzsgkxzsbejxwu-auth-token");
   API.logout();
   location.replace("index.html");
 });
