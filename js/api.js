@@ -15,6 +15,16 @@ export async function establishRecoverySession() {
     const { error } = await db.auth.exchangeCodeForSession(code);
     if (error) return false;
   }
+  const hash = new URLSearchParams(location.hash.slice(1));
+  const accessToken = hash.get("access_token");
+  const refreshToken = hash.get("refresh_token");
+  if (accessToken && refreshToken) {
+    const { error } = await db.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken
+    });
+    if (error) return false;
+  }
   const { data } = await db.auth.getSession();
   return Boolean(data.session && data.session.user);
 }
