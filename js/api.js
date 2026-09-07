@@ -8,6 +8,7 @@ if (!isConfigured) {
 }
 
 const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const AUTH_STORAGE_KEY = "sb-vmutkqvzsgkxzsbejxwu-auth-token";
 
 export async function establishRecoverySession() {
   const code = new URLSearchParams(location.search).get("code");
@@ -111,6 +112,15 @@ function sessionProfile(user) {
   };
 }
 
+function storedSessionProfile() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(AUTH_STORAGE_KEY) || "null");
+    return sessionProfile(stored && stored.user);
+  } catch (error) {
+    return null;
+  }
+}
+
 export const API = {
   async register(name, email, password, role) {
     name = String(name || "").trim();
@@ -195,9 +205,9 @@ export const API = {
   /* Calls back with the signed-in profile, null when signed out,
      or (null, "recovery") when the user arrived from a reset link. */
   onSession(callback) {
-    db.auth.getSession().then(function (res) {
-      callback(sessionProfile(res.data.session && res.data.session.user));
-    });
+    // Supabase persists the active session before navigation. Reading it here
+    // makes dashboard startup reliable even if an auth event is delayed.
+    callback(storedSessionProfile());
     return db.auth.onAuthStateChange(function (event, session) {
       if (event === "PASSWORD_RECOVERY") { callback(null, "recovery"); return; }
       // Supabase holds an internal auth lock while this callback runs.
