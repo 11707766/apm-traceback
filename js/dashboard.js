@@ -66,9 +66,11 @@ function notifyTester(previous, firstLoad) {
     });
 }
 
-document.getElementById("btn-logout").addEventListener("click", async function () {
+document.getElementById("btn-logout").addEventListener("click", function () {
   if (unsubscribe) unsubscribe();
-  await API.logout();
+  // Navigation must not wait on a network request; the local auth session is
+  // cleared synchronously by Supabase before its remote sign-out completes.
+  API.logout();
   location.replace("index.html");
 });
 
