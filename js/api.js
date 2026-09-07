@@ -11,9 +11,12 @@ const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 export async function establishRecoverySession() {
   const code = new URLSearchParams(location.search).get("code");
-  if (!code) return true;
-  const { error } = await db.auth.exchangeCodeForSession(code);
-  return !error;
+  if (code) {
+    const { error } = await db.auth.exchangeCodeForSession(code);
+    if (error) return false;
+  }
+  const { data } = await db.auth.getSession();
+  return Boolean(data.session && data.session.user);
 }
 
 const COLUMNS = {

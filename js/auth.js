@@ -129,6 +129,7 @@ var redirected = false;
 API.onSession(function (session, mode) {
   if (mode === "recovery") {
     recovering = true;
+    recoveryReady = true;
     showPane("pane-newpw");
     return;
   }
