@@ -12,6 +12,7 @@ function busy(form, on) {
 
 // createUser signs the new account in briefly; don't bounce to the dashboard for it.
 var registering = false;
+var recovering = /(?:[?#&])type=recovery(?:[&#]|$)/.test(location.href);
 
 document.querySelectorAll(".tab").forEach(function (tab) {
   tab.addEventListener("click", function () {
@@ -89,6 +90,8 @@ function showPane(id) {
   document.getElementById(id).classList.add("active");
 }
 
+if (recovering) showPane("pane-newpw");
+
 document.getElementById("pane-newpw").addEventListener("submit", async function (e) {
   e.preventDefault();
   var msg = document.getElementById("np-msg");
@@ -108,7 +111,6 @@ document.getElementById("pane-newpw").addEventListener("submit", async function 
   setTimeout(function () { location.href = "dashboard.html"; }, 1200);
 });
 
-var recovering = false;
 var redirected = false;
 API.onSession(function (session, mode) {
   if (mode === "recovery") {
@@ -116,7 +118,11 @@ API.onSession(function (session, mode) {
     showPane("pane-newpw");
     return;
   }
-  if (session && !redirected && !registering && !recovering) {
+  if (recovering) {
+    showPane("pane-newpw");
+    return;
+  }
+  if (session && !redirected && !registering) {
     redirected = true;
     location.replace("dashboard.html");
   }
