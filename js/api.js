@@ -18,6 +18,9 @@ export async function establishRecoverySession() {
   const hash = new URLSearchParams(location.hash.slice(1));
   const accessToken = hash.get("access_token");
   const refreshToken = hash.get("refresh_token");
+  // Implicit recovery links authorize password updates with their access token.
+  // Some browsers do not persist a session from this link until after the update.
+  if (accessToken && !refreshToken) return true;
   if (accessToken && refreshToken) {
     const { error } = await db.auth.setSession({
       access_token: accessToken,
@@ -143,6 +146,23 @@ export const API = {
   /* Used after following a reset link, where the recovery session is already active. */
   async setPassword(newPassword) {
     if (String(newPassword).length < 8) return { ok: false, error: "Password must be at least 8 characters." };
+    const recoveryToken = new URLSearchParams(location.hash.slice(1)).get("access_token");
+    if (recoveryToken) {
+      const response = await fetch(SUPABASE_URL + "/auth/v1/user", {
+        method: "PUT",
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: "Bearer " + recoveryToken,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ password: newPassword })
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(function () { return {}; });
+        return { ok: false, error: friendly(error) };
+      }
+      return { ok: true };
+    }
     const { error } = await db.auth.updateUser({ password: newPassword });
     if (error) return { ok: false, error: friendly(error) };
     return { ok: true };

@@ -1,5 +1,5 @@
 /* Login, registration and password reset backed by Firebase Auth. */
-import { API, establishRecoverySession } from "./api.js";
+import { API, establishRecoverySession } from "./api.js?v=20260908";
 
 function say(el, text, ok) {
   el.textContent = text;
@@ -94,8 +94,9 @@ function showPane(id) {
 
 if (recovering) {
   showPane("pane-newpw");
+  recoveryReady = new URLSearchParams(location.hash.slice(1)).has("access_token");
   establishRecoverySession().then(function (ready) {
-    recoveryReady = ready;
+    recoveryReady = recoveryReady || ready;
     if (!ready) {
       say(document.getElementById("np-msg"), "This reset link is invalid or has expired. Request a new one.", false);
     }
