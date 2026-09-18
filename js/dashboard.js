@@ -8,6 +8,7 @@ var isDeveloper = false;
 var changes = [];
 var editingUid = null;
 var unsubscribe = null;
+var expanded = {};
 
 var el = {
   list: document.getElementById("change-list"),
@@ -293,26 +294,30 @@ function cardHtml(c) {
       '<button class="btn danger sm" data-act="reject" data-uid="' + c.uid + '">Reject</button>';
   }
 
-  return '<article class="change">' +
+  var isExpanded = Boolean(expanded[c.uid]);
+
+  return '<article class="change' + (isExpanded ? " expanded" : "") + '">' +
     '<div class="chips">' +
       '<span class="chip type">' + esc(c.type) + "</span>" +
       '<span class="chip st-' + esc(String(c.status).replace(/\s/g, "")) + '">' + esc(c.status) + "</span>" +
       '<span class="chip pr-' + esc(c.priority) + '">Priority: ' + esc(c.priority) + "</span>" +
     "</div>" +
-    "<h4>" + esc(c.changeId) + "</h4>" +
+    '<h4 class="toggle" data-toggle="' + c.uid + '">' + esc(c.changeId) + '<span class="caret">\u25BE</span></h4>' +
     '<p class="muted">Raised ' + esc(fmt(c.createdAt)) + "</p>" +
-    '<div class="meta">' +
-      metaCell("Module", c.module) +
-      metaCell("Developer", c.developer) +
-      metaCell("Tester", c.tester) +
+    '<div class="details"' + (isExpanded ? "" : " hidden") + '>' +
+      '<div class="meta">' +
+        metaCell("Module", c.module) +
+        metaCell("Developer", c.developer) +
+        metaCell("Tester", c.tester) +
+      "</div>" +
+      '<div class="compare">' +
+        '<div class="side old"><h5>Previous ' + esc(c.type) + '</h5><div>' + d.oldHtml + "</div></div>" +
+        '<div class="side new"><h5>Updated ' + esc(c.type) + '</h5><div>' + d.newHtml + "</div></div>" +
+      "</div>" +
+      '<div class="reason"><b>Developer reason:</b> ' + esc(c.reason) + "</div>" +
+      (c.testerComment ? '<div class="reason"><b>Tester comment:</b> ' + esc(c.testerComment) + "</div>" : "") +
+      (actions ? '<div class="card-actions">' + actions + "</div>" : "") +
     "</div>" +
-    '<div class="compare">' +
-      '<div class="side old"><h5>Previous ' + esc(c.type) + '</h5><div>' + d.oldHtml + "</div></div>" +
-      '<div class="side new"><h5>Updated ' + esc(c.type) + '</h5><div>' + d.newHtml + "</div></div>" +
-    "</div>" +
-    '<div class="reason"><b>Developer reason:</b> ' + esc(c.reason) + "</div>" +
-    (c.testerComment ? '<div class="reason"><b>Tester comment:</b> ' + esc(c.testerComment) + "</div>" : "") +
-    (actions ? '<div class="card-actions">' + actions + "</div>" : "") +
     "</article>";
 }
 
@@ -324,6 +329,16 @@ function renderChanges() {
 }
 
 el.list.addEventListener("click", async function (e) {
+  var toggle = e.target.closest("h4[data-toggle]");
+  if (toggle) {
+    var uid = toggle.dataset.toggle;
+    expanded[uid] = !expanded[uid];
+    var article = toggle.closest(".change");
+    article.classList.toggle("expanded", expanded[uid]);
+    article.querySelector(".details").hidden = !expanded[uid];
+    return;
+  }
+
   var btn = e.target.closest("button[data-act]");
   if (!btn) return;
   var change = changes.filter(function (c) { return c.uid === btn.dataset.uid; })[0];
