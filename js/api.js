@@ -242,5 +242,9 @@ export const API = {
 
   updateChange(uid, patch) {
     return db.from("changes").update(toRow(patch)).eq("id", uid);
+  },
+
+  deleteChange(uid) {
+    return db.from("changes").delete().eq("id", uid);
   }
 };

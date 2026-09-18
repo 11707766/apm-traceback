@@ -262,6 +262,7 @@ function cardHtml(c) {
   if (isOwner) {
     if (c.status !== "Accepted") {
       actions += '<button class="btn dark sm" data-act="edit" data-uid="' + c.uid + '">Edit</button>';
+      actions += '<button class="btn danger sm" data-act="delete" data-uid="' + c.uid + '">Delete</button>';
     }
     if (c.status === "Draft") {
       actions += '<button class="btn green sm" data-act="notify" data-uid="' + c.uid + '">Notify Tester</button>';
@@ -312,6 +313,14 @@ el.list.addEventListener("click", async function (e) {
   if (btn.dataset.act === "edit") {
     if (change.developerEmail !== session.email) return;
     enterEditMode(change);
+  }
+
+  if (btn.dataset.act === "delete") {
+    if (change.developerEmail !== session.email) return;
+    if (!window.confirm("Delete " + change.changeId + "? This cannot be undone.")) return;
+    if (editingUid === change.uid) exitEditMode();
+    await API.deleteChange(change.uid);
+    toast("Change deleted", change.changeId + " was removed.");
   }
 
   if (btn.dataset.act === "notify") {
