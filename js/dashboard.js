@@ -257,7 +257,8 @@ function cardHtml(c) {
   var d = APMDiff.diff(c.previous, c.updated);
   var actions = "";
   var isOwner = isDeveloper && c.developerEmail === session.email;
-  var isOwnerless = isDeveloper && !c.developerEmail;
+  var ownerEmail = String(c.developerEmail || "").trim().toLowerCase();
+  var isOwnerless = isDeveloper && !isOwner && (ownerEmail === "" || ownerEmail === "null");
   var isAssignedTester = c.testerEmail === session.email;
 
   if (isOwner) {
@@ -320,7 +321,9 @@ el.list.addEventListener("click", async function (e) {
   }
 
   if (btn.dataset.act === "delete") {
-    if (change.developerEmail && change.developerEmail !== session.email) return;
+    var ownerEmail = String(change.developerEmail || "").trim().toLowerCase();
+    var isOwnerless = ownerEmail === "" || ownerEmail === "null";
+    if (!isOwnerless && change.developerEmail !== session.email) return;
     if (!isDeveloper) return;
     if (!window.confirm("Delete " + change.changeId + "? This cannot be undone.")) return;
     if (editingUid === change.uid) exitEditMode();

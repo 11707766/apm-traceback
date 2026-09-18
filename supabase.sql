@@ -67,14 +67,15 @@ create policy "changes update by participants"
   );
 
 -- The raising developer may delete their own change request; any developer
--- may also delete ownerless rows (developer_email left blank).
+-- may also delete ownerless rows (developer_email blank or the literal 'null').
 drop policy if exists "changes delete by owner" on public.changes;
 create policy "changes delete by owner"
   on public.changes for delete to authenticated
   using (
     developer_email = auth.jwt() ->> 'email'
     or developer_email is null
-    or developer_email = ''
+    or trim(developer_email) = ''
+    or lower(trim(developer_email)) = 'null'
   );
 
 -- Push row changes to connected clients for live cross-device sync.
