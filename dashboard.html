@@ -64,9 +64,9 @@
         <input id="f-module" required placeholder="Vehicle State / Brake Control" />
         <label for="f-tester">Assign tester</label>
         <select id="f-tester" required></select>
-        <label for="f-prev">Previous requirement / signal</label>
+        <label for="f-prev" id="f-prev-label">Previous requirement</label>
         <textarea id="f-prev" rows="3" required placeholder="Existing content"></textarea>
-        <label for="f-next">Updated requirement / signal</label>
+        <label for="f-next" id="f-next-label">Updated requirement</label>
         <textarea id="f-next" rows="3" required placeholder="New content"></textarea>
         <label for="f-reason">Developer reason</label>
         <textarea id="f-reason" rows="2" required placeholder="Why the change is needed"></textarea>
@@ -138,6 +138,6 @@
   <div id="toasts" class="toasts"></div>
   <script src="js/diff.js?v=20260912"></script>
   <script type="module" src="js/setup-check.js?v=20260912"></script>
-  <script type="module" src="js/dashboard.js?v=20260918b"></script>
+  <script type="module" src="js/dashboard.js?v=20260918c"></script>
 </body>
 </html>

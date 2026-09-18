@@ -15,8 +15,19 @@ var el = {
   tester: document.getElementById("f-tester"),
   formMsg: document.getElementById("form-msg"),
   q: document.getElementById("q"),
-  status: document.getElementById("f-status")
+  status: document.getElementById("f-status"),
+  type: document.getElementById("f-type"),
+  prevLabel: document.getElementById("f-prev-label"),
+  nextLabel: document.getElementById("f-next-label")
 };
+
+function syncTypeLabels() {
+  el.prevLabel.textContent = "Previous " + el.type.value;
+  el.nextLabel.textContent = "Updated " + el.type.value;
+}
+el.type.addEventListener("change", syncTypeLabels);
+syncTypeLabels();
+
 
 function fmt(iso) {
   return new Date(iso).toLocaleString();
@@ -182,6 +193,7 @@ document.getElementById("change-form").addEventListener("submit", async function
   } else {
     await API.addChange(payload);
     e.target.reset();
+    syncTypeLabels();
     el.formMsg.className = "msg ok";
     el.formMsg.textContent = "Change request saved. Use Notify Tester to send it for review.";
   }
@@ -196,6 +208,7 @@ function enterEditMode(change) {
   editingUid = change.uid;
   document.getElementById("f-id").value = change.changeId;
   document.getElementById("f-type").value = change.type;
+  syncTypeLabels();
   document.getElementById("f-priority").value = change.priority;
   document.getElementById("f-module").value = change.module;
   document.getElementById("f-prev").value = change.previous;
@@ -211,6 +224,7 @@ function enterEditMode(change) {
 function exitEditMode() {
   editingUid = null;
   document.getElementById("change-form").reset();
+  syncTypeLabels();
   document.getElementById("dev-panel-title").textContent = "Developer Update";
   document.getElementById("form-submit").textContent = "Raise change request";
   document.getElementById("cancel-edit").hidden = true;
@@ -293,8 +307,8 @@ function cardHtml(c) {
       metaCell("Tester", c.tester) +
     "</div>" +
     '<div class="compare">' +
-      '<div class="side old"><h5>Previous requirement / signal</h5><div>' + d.oldHtml + "</div></div>" +
-      '<div class="side new"><h5>Updated requirement / signal</h5><div>' + d.newHtml + "</div></div>" +
+      '<div class="side old"><h5>Previous ' + esc(c.type) + '</h5><div>' + d.oldHtml + "</div></div>" +
+      '<div class="side new"><h5>Updated ' + esc(c.type) + '</h5><div>' + d.newHtml + "</div></div>" +
     "</div>" +
     '<div class="reason"><b>Developer reason:</b> ' + esc(c.reason) + "</div>" +
     (c.testerComment ? '<div class="reason"><b>Tester comment:</b> ' + esc(c.testerComment) + "</div>" : "") +
