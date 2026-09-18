@@ -257,6 +257,7 @@ function cardHtml(c) {
   var d = APMDiff.diff(c.previous, c.updated);
   var actions = "";
   var isOwner = isDeveloper && c.developerEmail === session.email;
+  var isOwnerless = isDeveloper && !c.developerEmail;
   var isAssignedTester = c.testerEmail === session.email;
 
   if (isOwner) {
@@ -268,6 +269,9 @@ function cardHtml(c) {
       actions += '<button class="btn green sm" data-act="notify" data-uid="' + c.uid + '">Notify Tester</button>';
     }
     actions += '<button class="btn primary sm" data-act="mail" data-uid="' + c.uid + '">Notify Tester via Mail</button>';
+  } else if (isOwnerless) {
+    // No developer is attached to this row, so any developer may clean it up.
+    actions += '<button class="btn danger sm" data-act="delete" data-uid="' + c.uid + '">Delete</button>';
   } else if (isAssignedTester && c.status === "Tester Notified") {
     actions =
       '<button class="btn primary sm" data-act="accept" data-uid="' + c.uid + '">Accept</button>' +
@@ -316,7 +320,8 @@ el.list.addEventListener("click", async function (e) {
   }
 
   if (btn.dataset.act === "delete") {
-    if (change.developerEmail !== session.email) return;
+    if (change.developerEmail && change.developerEmail !== session.email) return;
+    if (!isDeveloper) return;
     if (!window.confirm("Delete " + change.changeId + "? This cannot be undone.")) return;
     if (editingUid === change.uid) exitEditMode();
     await API.deleteChange(change.uid);

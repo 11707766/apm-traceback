@@ -66,11 +66,16 @@ create policy "changes update by participants"
     or tester_email = auth.jwt() ->> 'email'
   );
 
--- Only the raising developer may delete their own change request.
+-- The raising developer may delete their own change request; any developer
+-- may also delete ownerless rows (developer_email left blank).
 drop policy if exists "changes delete by owner" on public.changes;
 create policy "changes delete by owner"
   on public.changes for delete to authenticated
-  using (developer_email = auth.jwt() ->> 'email');
+  using (
+    developer_email = auth.jwt() ->> 'email'
+    or developer_email is null
+    or developer_email = ''
+  );
 
 -- Push row changes to connected clients for live cross-device sync.
 alter publication supabase_realtime add table public.changes;
